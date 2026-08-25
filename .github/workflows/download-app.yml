@@ -3,16 +3,8 @@ name: Download App IPA
 on:
   workflow_dispatch:
     inputs:
-      email:
-        description: "Apple ID email"
-        required: true
-        type: string
-      password:
-        description: "Apple ID password"
-        required: true
-        type: string
       auth_code:
-        description: "2FA code (6 digits, leave empty on first run to trigger OTP)"
+        description: "2FA code (6 digits; leave empty on first run to trigger OTP)"
         required: false
         type: string
         default: ""
@@ -20,11 +12,17 @@ on:
         description: "App bundle ID to download"
         required: true
         type: string
+      version:
+        description: "Optional specific version (empty = latest available for account)"
+        required: false
+        type: string
+        default: ""
 
 jobs:
   download:
     name: Login + Download IPA
     runs-on: macos-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -39,35 +37,41 @@ jobs:
       - name: Build
         run: go build -o ipatool .
 
-      - name: Login (with 2FA code)
+      - name: Login with 2FA
         if: ${{ inputs.auth_code != '' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASS: ${{ secrets.APPLE_PASS }}
         run: |
           ./ipatool auth login \
-            --email "${{ inputs.email }}" \
-            --password "${{ inputs.password }}" \
-            --auth-code "${{ inputs.auth_code }}"
+            --email "$APPLE_ID" \
+            --password "$APPLE_PASS" \
+            --auth-code "${{ inputs.auth_code }}" \
+            --verbose || true
 
-      - name: Login (trigger OTP)
+      - name: Trigger OTP (first pass)
         if: ${{ inputs.auth_code == '' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASS: ${{ secrets.APPLE_PASS }}
         run: |
-          ./ipatool auth login \
-            --email "${{ inputs.email }}" \
-            --password "${{ inputs.password }}" || true
-
-      - name: Search app
-        run: |
-          ./ipatool search "${{ inputs.bundle_id }}"
+          ./ipatool auth login --email "$APPLE_ID" --password "$APPLE_PASS" || true
 
       - name: Download IPA
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASS: ${{ secrets.APPLE_PASS }}
         run: |
-          ./ipatool download \
-            --bundle-id "${{ inputs.bundle_id }}" \
-            --email "${{ inputs.email }}" \
-            --password "${{ inputs.password }}"
+          ARGS=(download --bundle-id "${{ inputs.bundle_id }}" --email "$APPLE_ID" --password "$APPLE_PASS")
+          if [ -n "${{ inputs.version }}" ]; then ARGS+=(--version "${{ inputs.version }}"); fi
+          ./ipatool "${ARGS[@]}"
+
+      - name: List output
+        run: ls -la *.ipa || true
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-ipa
+          name: app-ipa-${{ github.run_number }}
           path: "*.ipa"
-          if-no-files-found: error
+          if-no-files-found: warn

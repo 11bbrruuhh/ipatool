@@ -50,9 +50,9 @@ jobs:
           ./ipatool auth login "${LOGIN_ARGS[@]}"
 
           if [ -n "$BUNDLE_ID" ]; then
-            timeout 3000 ./ipatool download -b "$BUNDLE_ID" -o app.ipa || echo "download failed rc=$?"
+            ./ipatool download -b "$BUNDLE_ID" -o app.ipa || echo "download failed rc=$?"
           elif [ -n "$APP_ID" ]; then
-            timeout 3000 ./ipatool download -i "$APP_ID" -o app.ipa || echo "download failed rc=$?"
+            ./ipatool download -i "$APP_ID" -o app.ipa || echo "download failed rc=$?"
           else
             echo "need bundle_id or app_id"; exit 1
           fi

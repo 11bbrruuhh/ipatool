@@ -22,7 +22,7 @@ jobs:
   download:
     name: Login + Download IPA
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 

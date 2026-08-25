@@ -9,11 +9,11 @@ on:
         type: string
         default: ""
       bundle_id:
-        description: "App bundle ID to download"
+        description: "App bundle identifier"
         required: true
         type: string
-      version:
-        description: "Optional specific version (empty = latest available for account)"
+      app_id:
+        description: "Numeric app ID (used if bundle_id empty)"
         required: false
         type: string
         default: ""
@@ -37,17 +37,28 @@ jobs:
       - name: Build
         run: go build -o ipatool .
 
-      - name: Login with 2FA
+      - name: Login with 2FA + Purchase license + Download
         if: ${{ inputs.auth_code != '' }}
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASS: ${{ secrets.APPLE_PASS }}
+          BUNDLE_ID: ${{ inputs.bundle_id }}
+          APP_ID: ${{ inputs.app_id }}
         run: |
           ./ipatool auth login \
             --email "$APPLE_ID" \
             --password "$APPLE_PASS" \
-            --auth-code "${{ inputs.auth_code }}" \
-            --verbose || true
+            --auth-code "${{ inputs.auth_code }}"
+
+          if [ -n "$BUNDLE_ID" ]; then
+            ./ipatool download -b "$BUNDLE_ID" -o app.ipa --purchase || \
+            ./ipatool download -b "$BUNDLE_ID" -o app.ipa
+          elif [ -n "$APP_ID" ]; then
+            ./ipatool download -i "$APP_ID" -o app.ipa --purchase || \
+            ./ipatool download -i "$APP_ID" -o app.ipa
+          else
+            echo "need bundle_id or app_id"; exit 1
+          fi
 
       - name: Trigger OTP (first pass)
         if: ${{ inputs.auth_code == '' }}
@@ -56,15 +67,6 @@ jobs:
           APPLE_PASS: ${{ secrets.APPLE_PASS }}
         run: |
           ./ipatool auth login --email "$APPLE_ID" --password "$APPLE_PASS" || true
-
-      - name: Download IPA
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASS: ${{ secrets.APPLE_PASS }}
-        run: |
-          ARGS=(download --bundle-id "${{ inputs.bundle_id }}" --email "$APPLE_ID" --password "$APPLE_PASS")
-          if [ -n "${{ inputs.version }}" ]; then ARGS+=(--version "${{ inputs.version }}"); fi
-          ./ipatool "${ARGS[@]}"
 
       - name: List output
         run: ls -la *.ipa || true

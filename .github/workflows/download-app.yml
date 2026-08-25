@@ -37,18 +37,17 @@ jobs:
       - name: Build
         run: go build -o ipatool .
 
-      - name: Login with 2FA + Purchase license + Download
-        if: ${{ inputs.auth_code != '' }}
+      - name: Login + Purchase license + Download
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASS: ${{ secrets.APPLE_PASS }}
           BUNDLE_ID: ${{ inputs.bundle_id }}
           APP_ID: ${{ inputs.app_id }}
+          AUTH_CODE: ${{ inputs.auth_code }}
         run: |
-          ./ipatool auth login \
-            --email "$APPLE_ID" \
-            --password "$APPLE_PASS" \
-            --auth-code "${{ inputs.auth_code }}"
+          LOGIN_ARGS=(--email "$APPLE_ID" --password "$APPLE_PASS")
+          if [ -n "$AUTH_CODE" ]; then LOGIN_ARGS+=(--auth-code "$AUTH_CODE"); fi
+          ./ipatool auth login "${LOGIN_ARGS[@]}"
 
           if [ -n "$BUNDLE_ID" ]; then
             ./ipatool download -b "$BUNDLE_ID" -o app.ipa --purchase || \
@@ -59,14 +58,6 @@ jobs:
           else
             echo "need bundle_id or app_id"; exit 1
           fi
-
-      - name: Trigger OTP (first pass)
-        if: ${{ inputs.auth_code == '' }}
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASS: ${{ secrets.APPLE_PASS }}
-        run: |
-          ./ipatool auth login --email "$APPLE_ID" --password "$APPLE_PASS" || true
 
       - name: List output
         run: ls -la *.ipa || true

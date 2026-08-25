@@ -12,14 +12,14 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.25.0"
+          go-version-file: go.mod
           cache: true
 
       - name: Generate mocks
-        run: go generate github.com/majd/ipatool/...
+        run: go generate ./...
 
       - name: Run tests
-        run: go test github.com/majd/ipatool/pkg/http/... github.com/majd/ipatool/pkg/appstore/...
+        run: go test ./pkg/http/... ./pkg/appstore/...
 
       - name: Build macOS arm64 (SAP signing enabled)
         run: go build -o ipatool-sapfix-macos-arm64 .

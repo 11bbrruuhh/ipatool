@@ -22,6 +22,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"time"
 	"sync"
 	"unsafe"
 )
@@ -78,4 +79,43 @@ func Sign(data []byte) ([]byte, error) {
 	}
 
 	return C.GoBytes(unsafe.Pointer(output), C.int(outputLength)), nil
+}
+
+// signWithTimeout wraps Sign with a hard 15s timeout to avoid headless hangs.
+func signWithTimeout(data []byte) ([]byte, error) {
+	type res struct {
+		out []byte
+		err error
+	}
+	ch := make(chan res, 1)
+	go func() {
+		o, e := Sign(data)
+		ch <- res{o, e}
+	}()
+	select {
+	case r := <-ch:
+		return r.out, r.err
+	case <-time.After(15 * time.Second):
+		return nil, fmt.Errorf("%w: CommerceKit signing timed out", ErrUnavailable)
+	}
+}
+// Sign creates the binary SAP signature Apple expects for protected Store
+// actions by using the signing service built into macOS. Hard timeout guard:
+// headless runners can hang inside CommerceKit indefinitely.
+func Sign(data []byte) ([]byte, error) {
+	type res struct {
+		out []byte
+		err error
+	}
+	ch := make(chan res, 1)
+	go func() {
+		o, e := signRaw(data)
+		ch <- res{o, e}
+	}()
+	select {
+	case r := <-ch:
+		return r.out, r.err
+	case <-time.After(20 * time.Second):
+		return nil, fmt.Errorf("%w: CommerceKit signing timed out after 20s", ErrUnavailable)
+	}
 }

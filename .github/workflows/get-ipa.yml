@@ -80,8 +80,8 @@ jobs:
             run_bg_capture ./ipatool download -b "$BUNDLE_ID" -o app.ipa --purchase --verbose --keychain-passphrase "$KEYCHAIN_PASS" || \
             run_bg_capture ./ipatool download -b "$BUNDLE_ID" -o app.ipa --verbose --keychain-passphrase "$KEYCHAIN_PASS" || OK=0
           elif [ -n "$APP_ID" ]; then
-            run_bg_capture ./ipatool download -i "$APP_ID" -o app.ipa --purchase --verbose || \
-            run_bg_capture ./ipatool download -i "$APP_ID" -o app.ipa --verbose || OK=0
+            run_bg_capture ./ipatool download -i "$APP_ID" -o app.ipa --purchase --verbose --keychain-passphrase "$KEYCHAIN_PASS" || \
+            run_bg_capture ./ipatool download -i "$APP_ID" -o app.ipa --verbose --keychain-passphrase "$KEYCHAIN_PASS" || OK=0
           else
             echo "need bundle_id or app_id"; exit 1
           fi

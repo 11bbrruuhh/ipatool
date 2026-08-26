@@ -46,6 +46,10 @@ jobs:
           echo "--- v6 bag ---"
           curl -6 -sS -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 15 https://bag.itunes.apple.com/bag.xml || echo "v6 bag FAIL"
 
+
+      - name: Search probe
+        run: |
+          ./ipatool search Telegram --limit 3 || echo "search failed rc=$?"
       - name: Login + Purchase license + Download
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}

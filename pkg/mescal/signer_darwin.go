@@ -31,7 +31,7 @@ var signingMutex sync.Mutex
 
 // Sign creates the binary SAP signature Apple expects for protected Store
 // actions by using the signing service built into macOS.
-func Sign(data []byte) ([]byte, error) {
+func signRaw(data []byte) ([]byte, error) {
 	signingMutex.Lock()
 	defer signingMutex.Unlock()
 

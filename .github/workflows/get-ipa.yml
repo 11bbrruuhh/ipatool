@@ -80,3 +80,13 @@ jobs:
           path: "*.ipa"
           if-no-files-found: warn
 # trigger re-registration
+
+      - name: Upload diagnostics (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diag-${{ github.run_number }}
+          path: |
+            dl.log
+            purchase.log
+          if-no-files-found: ignore

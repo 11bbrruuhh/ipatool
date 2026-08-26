@@ -79,3 +79,4 @@ jobs:
           name: app-ipa-${{ github.run_number }}
           path: "*.ipa"
           if-no-files-found: warn
+# trigger re-registration

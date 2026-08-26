@@ -50,9 +50,11 @@ jobs:
           ./ipatool auth login "${LOGIN_ARGS[@]}"
 
           if [ -n "$BUNDLE_ID" ]; then
-            ./ipatool download -b "$BUNDLE_ID" -o app.ipa || echo "download failed rc=$?"
+            ./ipatool download -b "$BUNDLE_ID" -o app.ipa --purchase --verbose > purchase.log 2>&1 || \
+            ./ipatool download -b "$BUNDLE_ID" -o app.ipa --verbose || echo "download failed rc=$?"
           elif [ -n "$APP_ID" ]; then
-            ./ipatool download -i "$APP_ID" -o app.ipa || echo "download failed rc=$?"
+            ./ipatool download -i "$APP_ID" -o app.ipa --purchase --verbose > purchase.log 2>&1 || \
+            ./ipatool download -i "$APP_ID" -o app.ipa --verbose || echo "download failed rc=$?"
           else
             echo "need bundle_id or app_id"; exit 1
           fi

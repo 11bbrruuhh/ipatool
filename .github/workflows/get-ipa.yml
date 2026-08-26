@@ -37,6 +37,15 @@ jobs:
       - name: Build
         run: go build -o ipatool .
 
+      - name: Probe endpoints
+        run: |
+          echo "--- bag.itunes.apple.com ---"
+          curl -4 -sS -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 15 https://bag.itunes.apple.com/bag.xml || echo "v4 bag FAIL"
+          echo "--- p25-buy iTunes ---"
+          curl -4 -sS -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 15 "https://p25-buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/volumeStoreDownloadProduct" || echo "v4 p25 FAIL"
+          echo "--- v6 bag ---"
+          curl -6 -sS -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 15 https://bag.itunes.apple.com/bag.xml || echo "v6 bag FAIL"
+
       - name: Login + Purchase license + Download
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}

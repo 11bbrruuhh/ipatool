@@ -50,25 +50,25 @@ jobs:
           ./ipatool auth login "${LOGIN_ARGS[@]}"
 
           set -m
-watchdog() { for i in $(seq 1 300); do sleep 10; done; kill %1 2>/dev/null; }
-DL() {
-  watchdog & WD=$!
-  "$@" > dl.log 2>&1 &
-  PID=$!
-  wait $PID; RC=$?
-  kill $WD 2>/dev/null
-  echo "dl rc=$RC"
-  tail -c 2000 dl.log | tr "\r" "\n" | tail -20
-  return $RC
-}
-if [ -n "$BUNDLE_ID" ]; then
-  DL ./ipatool download -b "$BUNDLE_ID" -o app.ipa --purchase --verbose || \
-  DL ./ipatool download -b "$BUNDLE_ID" -o app.ipa --verbose || echo "both attempts failed"
-elif [ -n "$APP_ID" ]; then
-  DL ./ipatool download -i "$APP_ID" -o app.ipa --purchase --verbose || \
-  DL ./ipatool download -i "$APP_ID" -o app.ipa --verbose || echo "both attempts failed"
-fi
-ls -la *.ipa 2>/dev/null || true
+        watchdog() { for i in $(seq 1 300); do sleep 10; done; kill %1 2>/dev/null; }
+        DL() {
+          watchdog & WD=$!
+          "$@" > dl.log 2>&1 &
+          PID=$!
+          wait $PID; RC=$?
+          kill $WD 2>/dev/null
+          echo "dl rc=$RC"
+          tail -c 2000 dl.log | tr "\r" "\n" | tail -20
+          return $RC
+        }
+        if [ -n "$BUNDLE_ID" ]; then
+          DL ./ipatool download -b "$BUNDLE_ID" -o app.ipa --purchase --verbose || \
+          DL ./ipatool download -b "$BUNDLE_ID" -o app.ipa --verbose || echo "both attempts failed"
+        elif [ -n "$APP_ID" ]; then
+          DL ./ipatool download -i "$APP_ID" -o app.ipa --purchase --verbose || \
+          DL ./ipatool download -i "$APP_ID" -o app.ipa --verbose || echo "both attempts failed"
+        fi
+        ls -la *.ipa 2>/dev/null || true
 
       - name: List output
         run: ls -la *.ipa || true

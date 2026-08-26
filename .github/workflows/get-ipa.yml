@@ -98,3 +98,8 @@ jobs:
             dl.log
             purchase.log
           if-no-files-found: ignore
+
+      - name: TCP trace during download
+        if: always()
+        run: |
+          sudo tcpdump -i any -c 200 -nn host p25-buy.itunes.apple.com or host p**-buy.itunes.apple.com 2>/dev/null | head -100 || true

@@ -37,6 +37,13 @@ jobs:
       - name: Build
         run: go build -o ipatool .
 
+      - name: Create and unlock keychain
+        run: |
+          security create-keychain -p "" build.keychain || true
+          security set-keychain-settings -t 3600 -u build.keychain || true
+          security unlock-keychain -p "" build.keychain
+          security list-keychains -d user -s $(security list-keychains -d user | tr -d '"' ) build.keychain
+
       - name: Login + Download (captured)
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}

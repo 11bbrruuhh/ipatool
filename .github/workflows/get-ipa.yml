@@ -1,6 +1,6 @@
 name: Download App IPA
 
-on:
+"on":
   workflow_dispatch:
     inputs:
       auth_code:

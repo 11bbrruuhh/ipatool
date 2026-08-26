@@ -36,6 +36,7 @@ func downloadCmd() *cobra.Command {
 			purchased := false
 
 			return retry.Do(func() error {
+				fmt.Fprintln(os.Stderr, "[phase] accountinfo")
 				infoResult, err := dependencies.AppStore.AccountInfo()
 				if err != nil {
 					return err
@@ -43,7 +44,8 @@ func downloadCmd() *cobra.Command {
 
 				acc = infoResult.Account
 
-				if errors.Is(lastErr, appstore.ErrPasswordTokenExpired) {
+				fmt.Fprintln(os.Stderr, "[phase] accountinfo done")
+			if errors.Is(lastErr, appstore.ErrPasswordTokenExpired) {
 					bagOutput, err := dependencies.AppStore.Bag(appstore.BagInput{})
 					if err != nil {
 						return fmt.Errorf("failed to get bag: %w", err)
@@ -61,7 +63,8 @@ func downloadCmd() *cobra.Command {
 					acc = loginResult.Account
 				}
 
-				app := appstore.App{ID: appID}
+				fmt.Fprintln(os.Stderr, "[phase] lookup start")
+			app := appstore.App{ID: appID}
 				platform, err := appstore.ParsePlatform(platformValue)
 				if err != nil {
 					return err
@@ -80,7 +83,8 @@ func downloadCmd() *cobra.Command {
 					app = lookupResult.App
 				}
 
-				if errors.Is(lastErr, appstore.ErrLicenseRequired) {
+				fmt.Fprintln(os.Stderr, "[phase] lookup done")
+			if errors.Is(lastErr, appstore.ErrLicenseRequired) {
 					err := dependencies.AppStore.Purchase(appstore.PurchaseInput{Account: acc, App: app})
 					if err != nil && !errors.Is(err, appstore.ErrLicenseAlreadyExists) {
 						return err
@@ -110,7 +114,8 @@ func downloadCmd() *cobra.Command {
 					)
 				}
 
-				out, err := dependencies.AppStore.Download(appstore.DownloadInput{
+				fmt.Fprintln(os.Stderr, "[phase] download start")
+			out, err := dependencies.AppStore.Download(appstore.DownloadInput{
 					Account:           acc,
 					App:               app,
 					OutputPath:        outputPath,

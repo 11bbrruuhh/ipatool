@@ -22,7 +22,7 @@ jobs:
   download:
     name: Login + Download IPA
     runs-on: macos-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -37,20 +37,7 @@ jobs:
       - name: Build
         run: go build -o ipatool .
 
-      - name: Probe endpoints
-        run: |
-          echo "--- bag.itunes.apple.com ---"
-          curl -4 -sS -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 15 https://bag.itunes.apple.com/bag.xml || echo "v4 bag FAIL"
-          echo "--- p25-buy iTunes ---"
-          curl -4 -sS -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 15 "https://p25-buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/volumeStoreDownloadProduct" || echo "v4 p25 FAIL"
-          echo "--- v6 bag ---"
-          curl -6 -sS -o /dev/null -w "%{http_code} %{time_total}s\n" --max-time 15 https://bag.itunes.apple.com/bag.xml || echo "v6 bag FAIL"
-
-
-      - name: Search probe
-        run: |
-          ./ipatool search Telegram --limit 3 || echo "search failed rc=$?"
-      - name: Login + Purchase license + Download
+      - name: Login + Download (captured)
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASS: ${{ secrets.APPLE_PASS }}
@@ -61,33 +48,34 @@ jobs:
           LOGIN_ARGS=(--email "$APPLE_ID" --password "$APPLE_PASS")
           if [ -n "$AUTH_CODE" ]; then LOGIN_ARGS+=(--auth-code "$AUTH_CODE"); fi
           ./ipatool auth login "${LOGIN_ARGS[@]}"
-          
           set -m
-          watchdog() { for i in $(seq 1 300); do sleep 10; done; kill %1 2>/dev/null; }
-          DL() {
-          watchdog & WD=$!
-          "$@" 2>&1 | tr "\r" "\n"
-          return $RC
+          run_bg_capture() {
+            "$@" > step.log 2>&1 &
+            PID=$!
+            for i in $(seq 1 45); do
+              sleep 10
+              kill -0 $PID 2>/dev/null || break
+            done
+            if kill -0 $PID 2>/dev/null; then
+              echo "--- still running after 450s; killing ---"
+              kill $PID 2>/dev/null; sleep 2
+            fi
+            echo "--- step.log tail ---"
+            tr "\r" "\n" < step.log | tail -40
+            [ -f app.ipa ] && return 0 || return 1
           }
+          OK=1
           if [ -n "$BUNDLE_ID" ]; then
-          DL ./ipatool download -b "$BUNDLE_ID" -o app.ipa --purchase --verbose || \
-          DL ./ipatool download -b "$BUNDLE_ID" -o app.ipa --verbose || echo "both attempts failed"
+            run_bg_capture ./ipatool download -b "$BUNDLE_ID" -o app.ipa --purchase --verbose || \
+            run_bg_capture ./ipatool download -b "$BUNDLE_ID" -o app.ipa --verbose || OK=0
           elif [ -n "$APP_ID" ]; then
-          DL ./ipatool download -i "$APP_ID" -o app.ipa --purchase --verbose || \
-          DL ./ipatool download -i "$APP_ID" -o app.ipa --verbose || echo "both attempts failed"
+            run_bg_capture ./ipatool download -i "$APP_ID" -o app.ipa --purchase --verbose || \
+            run_bg_capture ./ipatool download -i "$APP_ID" -o app.ipa --verbose || OK=0
+          else
+            echo "need bundle_id or app_id"; exit 1
           fi
           ls -la *.ipa 2>/dev/null || true
-          
-      - name: List output
-        run: ls -la *.ipa || true
-
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-ipa-${{ github.run_number }}
-          path: "*.ipa"
-          if-no-files-found: warn
-# trigger re-registration
+          [ "$OK" = "1" ] || { echo "download did not produce ipa"; }
 
       - name: Upload diagnostics (always)
         if: always()
@@ -95,11 +83,13 @@ jobs:
         with:
           name: diag-${{ github.run_number }}
           path: |
-            dl.log
-            purchase.log
+            step.log
           if-no-files-found: ignore
 
-      - name: TCP trace during download
+      - name: Upload IPA artifact
         if: always()
-        run: |
-          sudo tcpdump -i any -c 200 -nn host p25-buy.itunes.apple.com or host p**-buy.itunes.apple.com 2>/dev/null | head -100 || true
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-ipa-${{ github.run_number }}
+          path: "*.ipa"
+          if-no-files-found: ignore

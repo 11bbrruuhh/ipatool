@@ -10,8 +10,9 @@ name: Download App IPA
         default: ""
       bundle_id:
         description: "App bundle identifier"
-        required: true
+        required: false
         type: string
+        default: ""
       app_id:
         description: "Numeric app ID (used if bundle_id empty)"
         required: false

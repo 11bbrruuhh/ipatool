@@ -61,12 +61,16 @@ func newCookieJar(machine machine.Machine) http.CookieJar {
 
 // newKeychain returns a new keychain instance.
 func newKeychain(machine machine.Machine, logger log.Logger, interactive bool) keychain.Keychain {
+	allowed := []keyring.BackendType{
+		keyring.KeychainBackend,
+		keyring.SecretServiceBackend,
+		keyring.FileBackend,
+	}
+	if os.Getenv("IPATOOL_KEYCHAIN") == "file" {
+		allowed = []keyring.BackendType{keyring.FileBackend}
+	}
 	ring := util.Must(keyring.Open(keyring.Config{
-		AllowedBackends: []keyring.BackendType{
-			keyring.KeychainBackend,
-			keyring.SecretServiceBackend,
-			keyring.FileBackend,
-		},
+		AllowedBackends: allowed,
 		ServiceName: KeychainServiceName,
 		FileDir:     filepath.Join(machine.HomeDirectory(), ConfigDirectoryName),
 		FilePasswordFunc: func(s string) (string, error) {

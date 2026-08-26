@@ -58,6 +58,7 @@ func (t *appstore) lookupRequest(bundleID, countryCode string, platform Platform
 		URL:            url,
 		Method:         http.MethodGET,
 		ResponseFormat: http.ResponseFormatJSON,
+		SignAction:     true,
 	}, nil
 }
 

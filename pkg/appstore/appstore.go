@@ -1,6 +1,7 @@
 package appstore
 
 import (
+	"os"
 	"github.com/majd/ipatool/v2/pkg/http"
 	"github.com/majd/ipatool/v2/pkg/keychain"
 	"github.com/majd/ipatool/v2/pkg/mescal"
@@ -56,8 +57,10 @@ type Args struct {
 
 func NewAppStore(args Args) AppStore {
 	clientArgs := http.Args{
-		CookieJar:    args.CookieJar,
-		ActionSigner: mescal.Sign,
+		CookieJar: args.CookieJar,
+	}
+	if os.Getenv("IPATOOL_NO_SIGN") != "1" {
+		clientArgs.ActionSigner = mescal.Sign
 	}
 
 	return &appstore{

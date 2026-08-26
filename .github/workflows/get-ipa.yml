@@ -44,6 +44,7 @@ jobs:
           BUNDLE_ID: ${{ inputs.bundle_id }}
           APP_ID: ${{ inputs.app_id }}
           AUTH_CODE: ${{ inputs.auth_code }}
+          IPATOOL_NO_SIGN: "1"
         run: |
           LOGIN_ARGS=(--email "$APPLE_ID" --password "$APPLE_PASS")
           if [ -n "$AUTH_CODE" ]; then LOGIN_ARGS+=(--auth-code "$AUTH_CODE"); fi

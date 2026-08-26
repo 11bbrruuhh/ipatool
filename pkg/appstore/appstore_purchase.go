@@ -113,6 +113,7 @@ func (t *appstore) purchaseRequest(acc Account, app App, storeFront, guid string
 		URL:            fmt.Sprintf("https://%s%s%s", podPrefix, PrivateAppStoreAPIDomain, PrivateAppStoreAPIPathPurchase),
 		Method:         http.MethodPOST,
 		ResponseFormat: http.ResponseFormatXML,
+		SignAction:     true,
 		Headers: map[string]string{
 			"Content-Type":        "application/x-apple-plist",
 			"iCloud-DSID":         acc.DirectoryServicesID,

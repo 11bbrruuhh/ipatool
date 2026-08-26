@@ -259,6 +259,7 @@ func (*appstore) downloadRequest(acc Account, app App, guid string, externalVers
 		URL:            fmt.Sprintf("https://%s%s%s?guid=%s", podPrefix, PrivateAppStoreAPIDomain, PrivateAppStoreAPIPathDownload, guid),
 		Method:         http.MethodPOST,
 		ResponseFormat: http.ResponseFormatXML,
+		SignAction:     true,
 		Headers: map[string]string{
 			"Content-Type": "application/x-apple-plist",
 			"iCloud-DSID":  acc.DirectoryServicesID,
